@@ -41,30 +41,35 @@ exports.checkAvailability = async (req, res) => {
 
 // voir toutes les voitures
 module.exports.allCars = async (req, res) => {
-    const { startDate, endDate } = req.query;
-    const cars = await Car.find();
+    try {
+        const { startDate, endDate } = req.query;
+        const cars = await Car.find();
 
-    if (startDate && endDate) {
-        const start = moment(new Date(startDate));
-        const end = moment(new Date(endDate));
-        const availableCars = cars.filter(car => {
-            // Check each unavailable date for this car
-            for(let i = 0; i < car.unavailableDates.length; i++) {
-                let unavailableDate = moment(new Date(car.unavailableDates[i]));
-                // If the unavailable date is within the selected range, exclude this car
-                if(unavailableDate.isSameOrAfter(start) && unavailableDate.isSameOrBefore(end)) {
-                    return false;
+        if (startDate && endDate) {
+            const start = moment(new Date(startDate));
+            const end = moment(new Date(endDate));
+            const availableCars = cars.filter(car => {
+                if (car.unavailableDates && Array.isArray(car.unavailableDates)) {
+                    for (let i = 0; i < car.unavailableDates.length; i++) {
+                        let unavailableDate = moment(new Date(car.unavailableDates[i]));
+                        if (unavailableDate.isSameOrAfter(start) && unavailableDate.isSameOrBefore(end)) {
+                            return false;
+                        }
+                    }
                 }
-            }
-            // If no unavailable dates within the range were found, include this car
-            return true;
-        });
+                return true;
+            });
 
-        return res.json(availableCars);
-    } else {
-        return res.json(cars);
+            return res.json(availableCars);
+        } else {
+            return res.json(cars);
+        }
+    } catch (error) {
+        console.error("An error occurred:", error);
+        return res.status(500).json({ message: "Internal Server Error" });
     }
 };
+
     
 
 //voir une voiture en particulier
